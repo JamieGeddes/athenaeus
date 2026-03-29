@@ -10,7 +10,13 @@ export const searchRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     const topK = limit ? Math.min(parseInt(limit, 10) || 10, 50) : 10;
-    const results = await queryChunks(q.trim(), topK);
-    return results;
+
+    try {
+      const results = await queryChunks(q.trim(), topK);
+      return results;
+    } catch (err) {
+      request.log.error(err, 'Search query failed');
+      return reply.code(503).send({ error: 'Search index is unavailable' });
+    }
   });
 };

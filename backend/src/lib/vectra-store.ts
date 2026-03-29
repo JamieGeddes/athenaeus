@@ -1,3 +1,5 @@
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import { LocalIndex } from 'vectra';
 import { VECTRA_DIR } from './config.js';
 import { embed } from './embeddings.js';
@@ -5,9 +7,20 @@ import type { SearchResult } from '../types.js';
 
 const index = new LocalIndex(VECTRA_DIR);
 
+async function isIndexValid(): Promise<boolean> {
+  try {
+    const content = await fs.readFile(path.join(VECTRA_DIR, 'index.json'), 'utf-8');
+    const data = JSON.parse(content);
+    return data !== null && typeof data === 'object' &&
+      typeof data.version === 'number' && Array.isArray(data.items);
+  } catch {
+    return false;
+  }
+}
+
 export async function initIndex(): Promise<void> {
-  if (!(await index.isIndexCreated())) {
-    await index.createIndex();
+  if (!(await index.isIndexCreated()) || !(await isIndexValid())) {
+    await index.createIndex({ version: 1, deleteIfExists: true });
   }
 }
 
