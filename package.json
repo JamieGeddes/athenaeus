@@ -1,0 +1,20 @@
+{
+  "name": "athenaeus",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "npm -w backend run dev",
+    "dev:frontend": "npm -w frontend run dev",
+    "build": "npm -w frontend run build",
+    "start": "npm -w backend run start",
+    "test": "npm -w backend run test"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
