@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Markdown from 'react-markdown';
 import type { Book, TocEntry } from '../types';
 import { deleteBook } from '../lib/api';
 import './BookDetail.css';
@@ -59,7 +60,9 @@ export default function BookDetail({ book, onClose, onDelete }: Props) {
             {book.summary && (
               <div className="detail-section">
                 <h3>Summary</h3>
-                <p className="detail-summary">{book.summary}</p>
+                <div className="detail-summary">
+                  <Markdown>{book.summary}</Markdown>
+                </div>
               </div>
             )}
 
