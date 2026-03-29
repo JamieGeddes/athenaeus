@@ -8,7 +8,7 @@ interface Props {
   book: Book;
   onClose: () => void;
   onDelete: (id: string) => void;
-  onRead: (book: Book) => void;
+
 }
 
 function TocList({ entries }: { entries: TocEntry[] }) {
@@ -24,7 +24,7 @@ function TocList({ entries }: { entries: TocEntry[] }) {
   );
 }
 
-export default function BookDetail({ book, onClose, onDelete, onRead }: Props) {
+export default function BookDetail({ book, onClose, onDelete }: Props) {
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -75,9 +75,14 @@ export default function BookDetail({ book, onClose, onDelete, onRead }: Props) {
             )}
 
             <div className="detail-actions">
-              <button className="btn-primary" onClick={() => onRead(book)}>
+              <a
+                className="btn-primary"
+                href={`/pdfs/${book.pdfPath}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 Read Book
-              </button>
+              </a>
               {confirming ? (
                 <div className="detail-confirm">
                   <span>Delete this book?</span>
