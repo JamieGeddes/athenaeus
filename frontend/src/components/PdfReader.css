@@ -1,0 +1,49 @@
+.reader-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.reader-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.reader-back {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.reader-back:hover {
+  background: var(--hover);
+}
+
+.reader-title {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reader-frame {
+  flex: 1;
+  border: none;
+  width: 100%;
+  background: var(--bg);
+}

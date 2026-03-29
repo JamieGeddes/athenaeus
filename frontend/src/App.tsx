@@ -6,12 +6,14 @@ import UploadForm from './components/UploadForm';
 import BookCarousel from './components/BookCarousel';
 import BookGrid from './components/BookGrid';
 import BookDetail from './components/BookDetail';
+import PdfReader from './components/PdfReader';
 import './App.css';
 
 export default function App() {
   const [books, setBooks] = useState<Book[]>([]);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ field: 'uploadDate', order: 'desc' });
+  const [readingBook, setReadingBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadBooks = useCallback(async () => {
@@ -37,6 +39,11 @@ export default function App() {
   const handleDelete = (id: string) => {
     setBooks((prev) => prev.filter((b) => b.id !== id));
     setSelectedBook(null);
+  };
+
+  const handleRead = (book: Book) => {
+    setSelectedBook(null);
+    setReadingBook(book);
   };
 
   const handleSearchSelect = (bookId: string) => {
@@ -73,6 +80,13 @@ export default function App() {
           book={selectedBook}
           onClose={() => setSelectedBook(null)}
           onDelete={handleDelete}
+          onRead={handleRead}
+        />
+      )}
+      {readingBook && (
+        <PdfReader
+          book={readingBook}
+          onClose={() => setReadingBook(null)}
         />
       )}
     </div>

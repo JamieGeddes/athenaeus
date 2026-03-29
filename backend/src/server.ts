@@ -43,6 +43,11 @@ await server.register(fastifyStatic, {
   root: COVERS_DIR,
   prefix: '/covers/',
 });
+await server.register(fastifyStatic, {
+  root: PDFS_DIR,
+  prefix: '/pdfs/',
+  decorateReply: false,
+});
 
 await server.register(bookRoutes, { prefix: '/api' });
 await server.register(searchRoutes, { prefix: '/api' });
@@ -59,7 +64,7 @@ if (process.env.NODE_ENV === 'production') {
   });
 
   server.setNotFoundHandler(async (request, reply) => {
-    if (request.url.startsWith('/api/') || request.url.startsWith('/covers/')) {
+    if (request.url.startsWith('/api/') || request.url.startsWith('/covers/') || request.url.startsWith('/pdfs/')) {
       return reply.code(404).send({ error: 'Not found' });
     }
     return reply.sendFile('index.html');
