@@ -30,11 +30,19 @@ export async function fetchBook(id: string): Promise<Book> {
   return res.json();
 }
 
-export async function uploadBook(file: File): Promise<Book> {
+export interface UploadProgress {
+  step: string;
+  progress: number;
+}
+
+export async function uploadBook(
+  file: File,
+  onProgress?: (progress: UploadProgress) => void,
+): Promise<Book> {
   const formData = new FormData();
   formData.append('file', file);
 
-  const res = await fetchWithRetry('/api/books', {
+  const res = await fetch('/api/books', {
     method: 'POST',
     body: formData,
   });
@@ -44,7 +52,53 @@ export async function uploadBook(file: File): Promise<Book> {
     throw new Error(error.error || 'Upload failed');
   }
 
-  return res.json();
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let book: Book | null = null;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop()!;
+
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      let event: Record<string, unknown>;
+      try {
+        event = JSON.parse(line);
+      } catch {
+        continue;
+      }
+      if (event.error) {
+        throw new Error(event.error as string);
+      }
+      if (event.done) {
+        book = event.book as Book;
+      } else if (event.step) {
+        onProgress?.({ step: event.step as string, progress: event.progress as number });
+      }
+    }
+  }
+
+  if (buffer.trim()) {
+    try {
+      const event = JSON.parse(buffer);
+      if (event.error) throw new Error(event.error);
+      if (event.done) book = event.book;
+    } catch (err) {
+      if (err instanceof Error && err.message !== buffer.trim()) throw err;
+    }
+  }
+
+  if (!book) {
+    throw new Error('Processing failed unexpectedly');
+  }
+
+  return book;
 }
 
 export async function deleteBook(id: string): Promise<void> {

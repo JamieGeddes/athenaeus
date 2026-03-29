@@ -28,6 +28,7 @@ export async function addChunks(
   bookId: string,
   bookTitle: string,
   chunks: { text: string; index: number }[],
+  onChunkProgress?: (completed: number, total: number) => void,
 ): Promise<void> {
   for (const chunk of chunks) {
     const vector = await embed(chunk.text);
@@ -40,6 +41,7 @@ export async function addChunks(
         text: chunk.text,
       },
     });
+    onChunkProgress?.(chunk.index + 1, chunks.length);
   }
 }
 

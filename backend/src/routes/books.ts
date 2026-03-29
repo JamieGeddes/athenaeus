@@ -26,22 +26,43 @@ export const bookRoutes: FastifyPluginAsync = async (fastify) => {
 
     await writeFile(pdfPath, pdfBuffer);
 
-    const result = await processPdf(pdfBuffer, bookId);
+    // Hijack the response to stream NDJSON progress events
+    reply.hijack();
+    const raw = reply.raw;
+    raw.writeHead(200, {
+      'Content-Type': 'application/x-ndjson',
+      'Cache-Control': 'no-cache',
+      'X-Accel-Buffering': 'no',
+    });
 
-    const book: Book = {
-      id: bookId,
-      title: result.title,
-      author: result.author,
-      uploadDate: new Date().toISOString(),
-      coverImagePath: result.coverImagePath,
-      pdfPath: pdfFilename,
-      summary: result.summary,
-      toc: result.toc,
-      originalFilename: file.filename,
+    const sendEvent = (event: object) => {
+      raw.write(JSON.stringify(event) + '\n');
     };
 
-    addBook(book);
-    return reply.code(201).send(book);
+    try {
+      const result = await processPdf(pdfBuffer, bookId, (step, progress) => {
+        sendEvent({ step, progress });
+      });
+
+      const book: Book = {
+        id: bookId,
+        title: result.title,
+        author: result.author,
+        uploadDate: new Date().toISOString(),
+        coverImagePath: result.coverImagePath,
+        pdfPath: pdfFilename,
+        summary: result.summary,
+        toc: result.toc,
+        originalFilename: file.filename,
+      };
+
+      addBook(book);
+      sendEvent({ done: true, book });
+    } catch (err) {
+      sendEvent({ error: err instanceof Error ? err.message : 'Processing failed' });
+    } finally {
+      raw.end();
+    }
   });
 
   fastify.get('/books', async (request) => {
