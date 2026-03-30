@@ -8,6 +8,7 @@ export interface Book {
   summary: string;
   toc: TocEntry[];
   originalFilename: string;
+  tags: string[];
 }
 
 export interface TocEntry {

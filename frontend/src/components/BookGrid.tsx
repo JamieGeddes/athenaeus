@@ -7,6 +7,8 @@ interface Props {
   sortConfig: SortConfig;
   onSortChange: (config: SortConfig) => void;
   onSelect: (book: Book) => void;
+  selectedTags: string[];
+  onTagToggle: (tag: string) => void;
 }
 
 const sortOptions: { field: SortConfig['field']; label: string }[] = [
@@ -15,7 +17,13 @@ const sortOptions: { field: SortConfig['field']; label: string }[] = [
   { field: 'uploadDate', label: 'Date' },
 ];
 
-export default function BookGrid({ books, sortConfig, onSortChange, onSelect }: Props) {
+export default function BookGrid({ books, sortConfig, onSortChange, onSelect, selectedTags, onTagToggle }: Props) {
+  const allTags = [...new Set(books.flatMap((b) => b.tags))].sort();
+
+  const filtered = selectedTags.length > 0
+    ? books.filter((b) => selectedTags.every((t) => b.tags.includes(t)))
+    : books;
+
   const handleSort = (field: SortConfig['field']) => {
     if (sortConfig.field === field) {
       onSortChange({ field, order: sortConfig.order === 'asc' ? 'desc' : 'asc' });
@@ -45,13 +53,31 @@ export default function BookGrid({ books, sortConfig, onSortChange, onSelect }: 
           ))}
         </div>
       </div>
-      {books.length === 0 ? (
+      {allTags.length > 0 && (
+        <div className="tag-filters">
+          {allTags.map((tag) => (
+            <button
+              key={tag}
+              className={`tag-filter-btn ${selectedTags.includes(tag) ? 'active' : ''}`}
+              onClick={() => onTagToggle(tag)}
+            >
+              {tag}
+            </button>
+          ))}
+          {selectedTags.length > 0 && (
+            <button className="tag-filter-clear" onClick={() => selectedTags.forEach(onTagToggle)}>
+              Clear
+            </button>
+          )}
+        </div>
+      )}
+      {filtered.length === 0 ? (
         <div className="book-grid-empty">
-          <p>No books yet. Upload a PDF to get started.</p>
+          <p>{books.length === 0 ? 'No books yet. Upload a PDF to get started.' : 'No books match the selected tags.'}</p>
         </div>
       ) : (
         <div className="book-grid">
-          {books.map((book) => (
+          {filtered.map((book) => (
             <BookCard key={book.id} book={book} onSelect={onSelect} />
           ))}
         </div>

@@ -1,3 +1,9 @@
+.upload-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
 .upload-form {
   display: flex;
   align-items: center;
@@ -30,6 +36,13 @@
 .upload-error {
   color: var(--error);
   font-size: 0.8rem;
+  display: block;
+}
+
+.upload-errors {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .upload-progress {
@@ -57,4 +70,9 @@
 .upload-progress-label {
   font-size: 0.8rem;
   color: var(--text-secondary);
+}
+
+.upload-queue-count {
+  color: var(--accent);
+  font-weight: 600;
 }

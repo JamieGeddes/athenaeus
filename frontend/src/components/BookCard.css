@@ -61,3 +61,22 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.book-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.35rem;
+}
+
+.book-card-tag {
+  font-size: 0.65rem;
+  background: var(--hover);
+  border-radius: 999px;
+  padding: 0.1rem 0.4rem;
+  color: var(--text-secondary);
+}
+
+.book-card-tag-more {
+  opacity: 0.6;
+}

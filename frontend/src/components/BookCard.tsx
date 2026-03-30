@@ -29,6 +29,16 @@ export default function BookCard({ book, onSelect }: Props) {
       <div className="book-card-info">
         <h3 className="book-card-title">{book.title}</h3>
         <p className="book-card-author">{book.author}</p>
+        {book.tags.length > 0 && (
+          <div className="book-card-tags">
+            {book.tags.slice(0, 3).map((tag) => (
+              <span key={tag} className="book-card-tag">{tag}</span>
+            ))}
+            {book.tags.length > 3 && (
+              <span className="book-card-tag book-card-tag-more">+{book.tags.length - 3}</span>
+            )}
+          </div>
+        )}
       </div>
     </button>
   );

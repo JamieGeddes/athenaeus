@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { writeFile, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { PDFS_DIR, COVERS_DIR } from '../lib/config.js';
-import { addBook, getBook, getAllBooks, removeBook } from '../lib/storage.js';
+import { addBook, getBook, getAllBooks, removeBook, updateBook, getAllTags } from '../lib/storage.js';
 import { processPdf } from '../lib/pdf-processor.js';
 import { deleteBookChunks } from '../lib/vectra-store.js';
 import type { Book } from '../types.js';
@@ -54,6 +54,7 @@ export const bookRoutes: FastifyPluginAsync = async (fastify) => {
         summary: result.summary,
         toc: result.toc,
         originalFilename: file.filename,
+        tags: [],
       };
 
       addBook(book);
@@ -88,6 +89,36 @@ export const bookRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.code(404).send({ error: 'Book not found' });
     }
     return book;
+  });
+
+  fastify.patch('/books/:id', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const body = request.body as { title?: string; author?: string; tags?: string[] };
+
+    if (body.title !== undefined && (typeof body.title !== 'string' || !body.title.trim())) {
+      return reply.code(400).send({ error: 'Title must be a non-empty string' });
+    }
+    if (body.author !== undefined && (typeof body.author !== 'string' || !body.author.trim())) {
+      return reply.code(400).send({ error: 'Author must be a non-empty string' });
+    }
+    if (body.tags !== undefined && (!Array.isArray(body.tags) || !body.tags.every((t) => typeof t === 'string'))) {
+      return reply.code(400).send({ error: 'Tags must be an array of strings' });
+    }
+
+    const updates: { title?: string; author?: string; tags?: string[] } = {};
+    if (body.title !== undefined) updates.title = body.title.trim();
+    if (body.author !== undefined) updates.author = body.author.trim();
+    if (body.tags !== undefined) updates.tags = [...new Set(body.tags.map((t) => t.trim()).filter(Boolean))];
+
+    const book = updateBook(id, updates);
+    if (!book) {
+      return reply.code(404).send({ error: 'Book not found' });
+    }
+    return book;
+  });
+
+  fastify.get('/tags', async () => {
+    return getAllTags();
   });
 
   fastify.delete('/books/:id', async (request, reply) => {

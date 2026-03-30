@@ -105,9 +105,28 @@ export async function uploadBook(
   return book;
 }
 
+export async function updateBook(id: string, updates: { title?: string; author?: string; tags?: string[] }): Promise<Book> {
+  const res = await fetchWithRetry(`/api/books/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: 'Update failed' }));
+    throw new Error(error.error || 'Update failed');
+  }
+  return res.json();
+}
+
 export async function deleteBook(id: string): Promise<void> {
   const res = await fetchWithRetry(`/api/books/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error('Failed to delete book');
+}
+
+export async function fetchAllTags(): Promise<string[]> {
+  const res = await fetchWithRetry('/api/tags');
+  if (!res.ok) throw new Error('Failed to fetch tags');
+  return res.json();
 }
 
 export async function searchBooks(query: string, limit: number = 10): Promise<SearchResult[]> {

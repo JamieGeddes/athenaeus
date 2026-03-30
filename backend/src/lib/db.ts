@@ -20,6 +20,14 @@ export function getDb(): Database.Database {
         original_filename TEXT NOT NULL
       )
     `).run();
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS book_tags (
+        book_id TEXT NOT NULL,
+        tag TEXT NOT NULL,
+        PRIMARY KEY (book_id, tag),
+        FOREIGN KEY (book_id) REFERENCES books(id)
+      )
+    `).run();
   }
   return db;
 }
