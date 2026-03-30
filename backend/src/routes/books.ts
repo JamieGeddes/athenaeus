@@ -1,11 +1,14 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { v4 as uuidv4 } from 'uuid';
-import { writeFile, unlink } from 'node:fs/promises';
+import { readFile, writeFile, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { PDFS_DIR, COVERS_DIR } from '../lib/config.js';
 import { addBook, getBook, getAllBooks, removeBook, updateBook, getAllTags, getFilteredBooks, getAllAuthors } from '../lib/storage.js';
 import { processPdf } from '../lib/pdf-processor.js';
-import { deleteBookChunks } from '../lib/vectra-store.js';
+import { deleteBookChunks, addChunks } from '../lib/vectra-store.js';
+import { getDocument } from '../lib/pdfjs.js';
+import { extractText } from '../lib/extractors/text.js';
+import { chunkText } from '../lib/pdf-processor.js';
 import type { Book, ReadingStatus } from '../types.js';
 import {
   parseRequest,
@@ -135,6 +138,30 @@ export const bookRoutes: FastifyPluginAsync = async (fastify) => {
 
   fastify.get('/tags', async () => {
     return getAllTags();
+  });
+
+  fastify.post('/books/:id/reindex', async (request, reply) => {
+    const params = parseRequest(IdParamSchema, request.params, reply);
+    if (!params) return;
+    const book = getBook(params.id);
+    if (!book) {
+      return reply.code(404).send({ error: 'Book not found' });
+    }
+
+    const pdfPath = path.join(PDFS_DIR, book.pdfPath);
+    const pdfBuffer = await readFile(pdfPath);
+    const loadingTask = getDocument({ data: new Uint8Array(pdfBuffer) });
+    const pdfDoc = await loadingTask.promise;
+
+    try {
+      const pages = await extractText(pdfDoc);
+      const chunks = chunkText(pages);
+      await deleteBookChunks(params.id);
+      await addChunks(params.id, book.title, chunks);
+      return { success: true, chunks: chunks.length };
+    } finally {
+      await pdfDoc.destroy();
+    }
   });
 
   fastify.delete('/books/:id', async (request, reply) => {

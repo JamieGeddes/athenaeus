@@ -46,4 +46,5 @@ export interface SearchResult {
   bookTitle: string;
   chunkText: string;
   score: number;
+  pageNumber: number | null;
 }

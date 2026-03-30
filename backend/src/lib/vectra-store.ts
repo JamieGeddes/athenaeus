@@ -30,7 +30,7 @@ export async function initIndex(): Promise<void> {
 export async function addChunks(
   bookId: string,
   bookTitle: string,
-  chunks: { text: string; index: number }[],
+  chunks: { text: string; index: number; pageNumber: number }[],
   onChunkProgress?: (completed: number, total: number) => void,
 ): Promise<void> {
   for (const chunk of chunks) {
@@ -42,6 +42,7 @@ export async function addChunks(
         bookTitle,
         chunkIndex: chunk.index,
         text: chunk.text,
+        pageNumber: chunk.pageNumber,
       },
     });
     onChunkProgress?.(chunk.index + 1, chunks.length);
@@ -63,6 +64,7 @@ export async function queryChunks(
       bookTitle: r.item.metadata.bookTitle as string,
       chunkText: r.item.metadata.text as string,
       score: r.score,
+      pageNumber: (r.item.metadata.pageNumber as number) ?? null,
     }));
 }
 

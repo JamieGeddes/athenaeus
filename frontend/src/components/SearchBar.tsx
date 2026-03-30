@@ -4,10 +4,10 @@ import type { SearchResult } from '../types';
 import './SearchBar.css';
 
 interface Props {
-  onSelectBook: (bookId: string) => void;
+  onSelectResult: (result: SearchResult) => void;
 }
 
-export default function SearchBar({ onSelectBook }: Props) {
+export default function SearchBar({ onSelectResult }: Props) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -77,14 +77,17 @@ export default function SearchBar({ onSelectBook }: Props) {
                 key={i}
                 className="search-result"
                 onClick={() => {
-                  onSelectBook(r.bookId);
+                  onSelectResult(r);
                   setOpen(false);
                   setQuery('');
                 }}
               >
                 <span className="search-result-book">{r.bookTitle}</span>
                 <span className="search-result-text">{r.chunkText.slice(0, 150)}...</span>
-                <span className="search-result-score">{Math.round(r.score * 100)}%</span>
+                <span className="search-result-meta">
+                  {r.pageNumber && <span className="search-result-page">p. {r.pageNumber}</span>}
+                  <span className="search-result-score">{Math.round(r.score * 100)}%</span>
+                </span>
               </button>
             ))
           )}

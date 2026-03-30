@@ -1,7 +1,9 @@
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 
-export async function extractText(pdfDoc: PDFDocumentProxy): Promise<string> {
-  const pages: string[] = [];
+export async function extractText(
+  pdfDoc: PDFDocumentProxy,
+): Promise<{ text: string; pageNumber: number }[]> {
+  const pages: { text: string; pageNumber: number }[] = [];
 
   for (let i = 1; i <= pdfDoc.numPages; i++) {
     const page = await pdfDoc.getPage(i);
@@ -20,9 +22,9 @@ export async function extractText(pdfDoc: PDFDocumentProxy): Promise<string> {
       }
     }
 
-    pages.push(pageText.trim());
+    pages.push({ text: pageText.trim(), pageNumber: i });
     page.cleanup();
   }
 
-  return pages.join('\n\n');
+  return pages;
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { fetchBooks, fetchCollections, fetchAuthors, createCollection, deleteCollectionApi } from './lib/api';
-import type { Book, SortConfig, ReadingStatus, Collection, BookFilters } from './types';
+import type { Book, SortConfig, ReadingStatus, Collection, BookFilters, SearchResult } from './types';
 
 const STATUS_LABELS: Record<ReadingStatus, string> = {
   unread: 'Unread',
@@ -102,9 +102,12 @@ export default function App() {
     }
   };
 
-  const handleSearchSelect = (bookId: string) => {
-    const book = books.find((b) => b.id === bookId);
-    if (book) setSelectedBook(book);
+  const handleSearchSelect = (result: SearchResult) => {
+    const book = books.find((b) => b.id === result.bookId);
+    if (book) {
+      const pageFragment = result.pageNumber ? `#page=${result.pageNumber}` : '';
+      window.open(`/pdfs/${book.pdfPath}${pageFragment}`, '_blank');
+    }
   };
 
   const stats = useMemo(() => {
@@ -121,7 +124,7 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <h1>Athenaeus</h1>
-        <SearchBar onSelectBook={handleSearchSelect} />
+        <SearchBar onSelectResult={handleSearchSelect} />
         <button className="upload-btn" onClick={() => setShowUploadModal(true)}>Upload</button>
       </header>
 

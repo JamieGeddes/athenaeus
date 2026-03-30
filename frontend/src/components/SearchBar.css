@@ -83,6 +83,18 @@
   line-height: 1.4;
 }
 
+.search-result-meta {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.search-result-page {
+  font-size: 0.75rem;
+  color: var(--accent);
+  opacity: 0.8;
+}
+
 .search-result-score {
   font-size: 0.75rem;
   color: var(--text-secondary);
