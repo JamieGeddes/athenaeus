@@ -9,7 +9,7 @@ const STATUS_LABELS: Record<ReadingStatus, string> = {
   finished: 'Finished',
 };
 import SearchBar from './components/SearchBar';
-import UploadForm from './components/UploadForm';
+import UploadModal from './components/UploadModal';
 import BookCarousel from './components/BookCarousel';
 import BookGrid from './components/BookGrid';
 import BookDetail from './components/BookDetail';
@@ -24,6 +24,7 @@ export default function App() {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [allAuthors, setAllAuthors] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showUploadModal, setShowUploadModal] = useState(false);
 
   const hasActiveFilters = filters.authors.length > 0 || filters.tags.length > 0 || filters.statuses.length > 0 || filters.collections.length > 0;
 
@@ -121,7 +122,7 @@ export default function App() {
       <header className="app-header">
         <h1>Athenaeus</h1>
         <SearchBar onSelectBook={handleSearchSelect} />
-        <UploadForm onUploadComplete={handleUploadComplete} />
+        <button className="upload-btn" onClick={() => setShowUploadModal(true)}>Upload</button>
       </header>
 
       {books.length > 0 && (
@@ -156,6 +157,13 @@ export default function App() {
           </>
         )}
       </main>
+
+      {showUploadModal && (
+        <UploadModal
+          onUploadComplete={handleUploadComplete}
+          onClose={() => setShowUploadModal(false)}
+        />
+      )}
 
       {selectedBook && (
         <BookDetail

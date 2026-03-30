@@ -58,6 +58,23 @@
 .stats-card--reading .stats-count { color: #4f8ff7; }
 .stats-card--finished .stats-count { color: #4fcf7b; }
 
+.upload-btn {
+  padding: 0.5rem 1.25rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+}
+
+.upload-btn:hover {
+  opacity: 0.85;
+}
+
 .app-loading {
   text-align: center;
   padding: 4rem 1rem;
