@@ -1,3 +1,5 @@
+export type ReadingStatus = 'unread' | 'want_to_read' | 'reading' | 'finished';
+
 export interface Book {
   id: string;
   title: string;
@@ -9,6 +11,9 @@ export interface Book {
   toc: TocEntry[];
   originalFilename: string;
   tags: string[];
+  readingStatus: ReadingStatus;
+  notes: string;
+  collections: string[];
 }
 
 export interface TocEntry {
@@ -33,4 +38,28 @@ export interface BookRow {
   summary: string;
   toc: string;
   original_filename: string;
+  reading_status: string;
+  notes: string;
+}
+
+export interface Collection {
+  id: string;
+  name: string;
+  description: string;
+  createdDate: string;
+  bookCount: number;
+}
+
+export interface BookFilters {
+  authors?: string[];
+  tags?: string[];
+  statuses?: ReadingStatus[];
+  collections?: string[];
+}
+
+export interface CollectionRow {
+  id: string;
+  name: string;
+  description: string;
+  created_date: string;
 }

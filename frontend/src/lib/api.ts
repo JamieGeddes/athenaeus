@@ -1,4 +1,4 @@
-import type { Book, SearchResult } from '../types';
+import type { Book, SearchResult, Collection, BookFilters } from '../types';
 
 async function fetchWithRetry(url: string, init?: RequestInit, retries = 3): Promise<Response> {
   for (let i = 0; i <= retries; i++) {
@@ -17,14 +17,24 @@ async function fetchWithRetry(url: string, init?: RequestInit, retries = 3): Pro
   throw new Error('Unreachable');
 }
 
-export async function fetchBooks(sortBy?: string, order?: string): Promise<Book[]> {
+export async function fetchBooks(sortBy?: string, order?: string, filters?: Partial<BookFilters>): Promise<Book[]> {
   const params = new URLSearchParams();
   if (sortBy) params.set('sortBy', sortBy);
   if (order) params.set('order', order);
+  if (filters?.authors?.length) params.set('authors', filters.authors.join(','));
+  if (filters?.tags?.length) params.set('tags', filters.tags.join(','));
+  if (filters?.statuses?.length) params.set('statuses', filters.statuses.join(','));
+  if (filters?.collections?.length) params.set('collections', filters.collections.join(','));
 
   const url = `/api/books${params.toString() ? `?${params}` : ''}`;
   const res = await fetchWithRetry(url);
   if (!res.ok) throw new Error('Failed to fetch books');
+  return res.json();
+}
+
+export async function fetchAuthors(): Promise<string[]> {
+  const res = await fetchWithRetry('/api/authors');
+  if (!res.ok) throw new Error('Failed to fetch authors');
   return res.json();
 }
 
@@ -105,7 +115,7 @@ export async function uploadBook(
   return book;
 }
 
-export async function updateBook(id: string, updates: { title?: string; author?: string; tags?: string[] }): Promise<Book> {
+export async function updateBook(id: string, updates: { title?: string; author?: string; tags?: string[]; readingStatus?: string; notes?: string }): Promise<Book> {
   const res = await fetchWithRetry(`/api/books/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -134,4 +144,44 @@ export async function searchBooks(query: string, limit: number = 10): Promise<Se
   const res = await fetchWithRetry(`/api/search?${params}`);
   if (!res.ok) throw new Error('Search failed');
   return res.json();
+}
+
+// Collections
+
+export async function fetchCollections(): Promise<Collection[]> {
+  const res = await fetchWithRetry('/api/collections');
+  if (!res.ok) throw new Error('Failed to fetch collections');
+  return res.json();
+}
+
+export async function createCollection(name: string, description?: string): Promise<Collection> {
+  const res = await fetchWithRetry('/api/collections', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, description }),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: 'Create failed' }));
+    throw new Error(error.error || 'Create failed');
+  }
+  return res.json();
+}
+
+export async function deleteCollectionApi(id: string): Promise<void> {
+  const res = await fetchWithRetry(`/api/collections/${id}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error('Failed to delete collection');
+}
+
+export async function addBookToCollection(collectionId: string, bookId: string): Promise<void> {
+  const res = await fetchWithRetry(`/api/collections/${collectionId}/books`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ bookId }),
+  });
+  if (!res.ok) throw new Error('Failed to add book to collection');
+}
+
+export async function removeBookFromCollection(collectionId: string, bookId: string): Promise<void> {
+  const res = await fetchWithRetry(`/api/collections/${collectionId}/books/${bookId}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error('Failed to remove book from collection');
 }

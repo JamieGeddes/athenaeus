@@ -27,6 +27,11 @@ export default function BookCard({ book, onSelect }: Props) {
         )}
       </div>
       <div className="book-card-info">
+        {book.readingStatus && book.readingStatus !== 'unread' && (
+          <span className={`book-card-status book-card-status--${book.readingStatus}`}>
+            {({ want_to_read: 'Want to Read', reading: 'Reading', finished: 'Finished' } as Record<string, string>)[book.readingStatus]}
+          </span>
+        )}
         <h3 className="book-card-title">{book.title}</h3>
         <p className="book-card-author">{book.author}</p>
         {book.tags.length > 0 && (

@@ -17,7 +17,9 @@ export function getDb(): Database.Database {
         pdf_path TEXT NOT NULL,
         summary TEXT NOT NULL DEFAULT '',
         toc TEXT NOT NULL DEFAULT '[]',
-        original_filename TEXT NOT NULL
+        original_filename TEXT NOT NULL,
+        reading_status TEXT NOT NULL DEFAULT 'unread',
+        notes TEXT NOT NULL DEFAULT ''
       )
     `).run();
     db.prepare(`
@@ -28,6 +30,28 @@ export function getDb(): Database.Database {
         FOREIGN KEY (book_id) REFERENCES books(id)
       )
     `).run();
+
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS collections (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL UNIQUE,
+        description TEXT NOT NULL DEFAULT '',
+        created_date TEXT NOT NULL
+      )
+    `).run();
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS book_collections (
+        book_id TEXT NOT NULL,
+        collection_id TEXT NOT NULL,
+        PRIMARY KEY (book_id, collection_id),
+        FOREIGN KEY (book_id) REFERENCES books(id),
+        FOREIGN KEY (collection_id) REFERENCES collections(id)
+      )
+    `).run();
+
+    // Migrations for existing databases
+    try { db.prepare('ALTER TABLE books ADD COLUMN reading_status TEXT NOT NULL DEFAULT \'unread\'').run(); } catch {}
+    try { db.prepare('ALTER TABLE books ADD COLUMN notes TEXT NOT NULL DEFAULT \'\'').run(); } catch {}
   }
   return db;
 }

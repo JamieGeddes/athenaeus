@@ -26,6 +26,38 @@
   padding-bottom: 3rem;
 }
 
+.stats-bar {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.stats-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.75rem 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.stats-count {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.stats-label {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  margin-top: 0.15rem;
+}
+
+.stats-card--want_to_read .stats-count { color: #f5c542; }
+.stats-card--reading .stats-count { color: #4f8ff7; }
+.stats-card--finished .stats-count { color: #4fcf7b; }
+
 .app-loading {
   text-align: center;
   padding: 4rem 1rem;

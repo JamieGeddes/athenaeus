@@ -171,6 +171,112 @@
   opacity: 0.6;
 }
 
+/* Collections */
+.detail-collections {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+}
+
+.collection-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: #1a2e3b;
+  border: 1px solid #2a4a5a;
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+  color: #4f8ff7;
+}
+
+.collection-select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  padding: 0.2rem 0.35rem;
+  cursor: pointer;
+}
+
+.collection-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Status dropdown */
+.detail-status-select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.8rem;
+  padding: 0.3rem 0.5rem;
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+  display: block;
+}
+
+.detail-status-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Notes */
+.detail-notes-textarea {
+  width: 100%;
+  min-height: 150px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.85rem;
+  padding: 0.75rem;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.detail-notes-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.detail-notes-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.detail-notes-empty {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-style: italic;
+  margin: 0;
+}
+
+.detail-notes-empty:hover {
+  color: var(--text);
+}
+
+.detail-notes-edit-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 0.5rem;
+}
+
+.detail-notes-edit-btn:hover {
+  color: var(--accent);
+}
+
 .detail-section {
   margin-bottom: 1.5rem;
 }

@@ -80,3 +80,29 @@
 .book-card-tag-more {
   opacity: 0.6;
 }
+
+.book-card-status {
+  font-size: 0.6rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  display: inline-block;
+  margin-bottom: 0.25rem;
+}
+
+.book-card-status--want_to_read {
+  background: #3b3820;
+  color: #f5c542;
+}
+
+.book-card-status--reading {
+  background: #1a2e3b;
+  color: #4f8ff7;
+}
+
+.book-card-status--finished {
+  background: #1a3b2a;
+  color: #4fcf7b;
+}

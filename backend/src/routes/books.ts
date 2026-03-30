@@ -3,10 +3,12 @@ import { v4 as uuidv4 } from 'uuid';
 import { writeFile, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { PDFS_DIR, COVERS_DIR } from '../lib/config.js';
-import { addBook, getBook, getAllBooks, removeBook, updateBook, getAllTags } from '../lib/storage.js';
+import { addBook, getBook, getAllBooks, removeBook, updateBook, getAllTags, getFilteredBooks, getAllAuthors } from '../lib/storage.js';
 import { processPdf } from '../lib/pdf-processor.js';
 import { deleteBookChunks } from '../lib/vectra-store.js';
-import type { Book } from '../types.js';
+import type { Book, ReadingStatus } from '../types.js';
+
+const VALID_STATUSES: ReadingStatus[] = ['unread', 'want_to_read', 'reading', 'finished'];
 
 export const bookRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post('/books', async (request, reply) => {
@@ -55,6 +57,9 @@ export const bookRoutes: FastifyPluginAsync = async (fastify) => {
         toc: result.toc,
         originalFilename: file.filename,
         tags: [],
+        readingStatus: 'unread',
+        notes: '',
+        collections: [],
       };
 
       addBook(book);
@@ -67,7 +72,10 @@ export const bookRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   fastify.get('/books', async (request) => {
-    const { sortBy, order } = request.query as { sortBy?: string; order?: string };
+    const { sortBy, order, authors, tags, statuses, collections } = request.query as {
+      sortBy?: string; order?: string;
+      authors?: string; tags?: string; statuses?: string; collections?: string;
+    };
 
     const validFields = ['title', 'author', 'uploadDate'] as const;
     const validOrders = ['asc', 'desc'] as const;
@@ -79,7 +87,22 @@ export const bookRoutes: FastifyPluginAsync = async (fastify) => {
         }
       : undefined;
 
+    const hasFilters = authors || tags || statuses || collections;
+    if (hasFilters) {
+      const filters = {
+        authors: authors ? authors.split(',').filter(Boolean) : undefined,
+        tags: tags ? tags.split(',').filter(Boolean) : undefined,
+        statuses: statuses ? statuses.split(',').filter(Boolean) as ReadingStatus[] : undefined,
+        collections: collections ? collections.split(',').filter(Boolean) : undefined,
+      };
+      return getFilteredBooks(filters, sort);
+    }
+
     return getAllBooks(sort);
+  });
+
+  fastify.get('/authors', async () => {
+    return getAllAuthors();
   });
 
   fastify.get('/books/:id', async (request, reply) => {
@@ -93,7 +116,7 @@ export const bookRoutes: FastifyPluginAsync = async (fastify) => {
 
   fastify.patch('/books/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
-    const body = request.body as { title?: string; author?: string; tags?: string[] };
+    const body = request.body as { title?: string; author?: string; tags?: string[]; readingStatus?: string; notes?: string };
 
     if (body.title !== undefined && (typeof body.title !== 'string' || !body.title.trim())) {
       return reply.code(400).send({ error: 'Title must be a non-empty string' });
@@ -104,11 +127,19 @@ export const bookRoutes: FastifyPluginAsync = async (fastify) => {
     if (body.tags !== undefined && (!Array.isArray(body.tags) || !body.tags.every((t) => typeof t === 'string'))) {
       return reply.code(400).send({ error: 'Tags must be an array of strings' });
     }
+    if (body.readingStatus !== undefined && !VALID_STATUSES.includes(body.readingStatus as ReadingStatus)) {
+      return reply.code(400).send({ error: `Reading status must be one of: ${VALID_STATUSES.join(', ')}` });
+    }
+    if (body.notes !== undefined && typeof body.notes !== 'string') {
+      return reply.code(400).send({ error: 'Notes must be a string' });
+    }
 
-    const updates: { title?: string; author?: string; tags?: string[] } = {};
+    const updates: { title?: string; author?: string; tags?: string[]; readingStatus?: ReadingStatus; notes?: string } = {};
     if (body.title !== undefined) updates.title = body.title.trim();
     if (body.author !== undefined) updates.author = body.author.trim();
     if (body.tags !== undefined) updates.tags = [...new Set(body.tags.map((t) => t.trim()).filter(Boolean))];
+    if (body.readingStatus !== undefined) updates.readingStatus = body.readingStatus as ReadingStatus;
+    if (body.notes !== undefined) updates.notes = body.notes;
 
     const book = updateBook(id, updates);
     if (!book) {

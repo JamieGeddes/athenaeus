@@ -1,14 +1,22 @@
 import { useState, useRef, useEffect } from 'react';
 import Markdown from 'react-markdown';
-import type { Book, TocEntry } from '../types';
-import { deleteBook, updateBook } from '../lib/api';
+import type { Book, TocEntry, ReadingStatus, Collection } from '../types';
+import { deleteBook, updateBook, addBookToCollection, removeBookFromCollection } from '../lib/api';
 import './BookDetail.css';
+
+const STATUS_LABELS: Record<ReadingStatus, string> = {
+  unread: 'Unread',
+  want_to_read: 'Want to Read',
+  reading: 'Reading',
+  finished: 'Finished',
+};
 
 interface Props {
   book: Book;
   onClose: () => void;
   onDelete: (id: string) => void;
   onUpdate: (book: Book) => void;
+  collections: Collection[];
 }
 
 function TocList({ entries }: { entries: TocEntry[] }) {
@@ -66,13 +74,20 @@ function EditableField({ value, onSave, className }: { value: string; onSave: (v
   );
 }
 
-export default function BookDetail({ book, onClose, onDelete, onUpdate }: Props) {
+export default function BookDetail({ book, onClose, onDelete, onUpdate, collections }: Props) {
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [tagInput, setTagInput] = useState('');
   const tagInputRef = useRef<HTMLInputElement>(null);
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesDraft, setNotesDraft] = useState(book.notes);
 
-  const handleSave = async (updates: { title?: string; author?: string; tags?: string[] }) => {
+  useEffect(() => {
+    setNotesDraft(book.notes);
+    setEditingNotes(false);
+  }, [book.notes]);
+
+  const handleSave = async (updates: { title?: string; author?: string; tags?: string[]; readingStatus?: ReadingStatus; notes?: string }) => {
     try {
       const updated = await updateBook(book.id, updates);
       onUpdate(updated);
@@ -91,6 +106,24 @@ export default function BookDetail({ book, onClose, onDelete, onUpdate }: Props)
 
   const handleRemoveTag = (tag: string) => {
     handleSave({ tags: book.tags.filter((t) => t !== tag) });
+  };
+
+  const handleAddToCollection = async (collectionId: string) => {
+    try {
+      await addBookToCollection(collectionId, book.id);
+      onUpdate({ ...book, collections: [...(book.collections || []), collectionId] });
+    } catch (err) {
+      console.error('Failed to add to collection:', err);
+    }
+  };
+
+  const handleRemoveFromCollection = async (collectionId: string) => {
+    try {
+      await removeBookFromCollection(collectionId, book.id);
+      onUpdate({ ...book, collections: (book.collections || []).filter((c) => c !== collectionId) });
+    } catch (err) {
+      console.error('Failed to remove from collection:', err);
+    }
   };
 
   const handleDelete = async () => {
@@ -134,6 +167,15 @@ export default function BookDetail({ book, onClose, onDelete, onUpdate }: Props)
             <p className="detail-date">
               Uploaded {new Date(book.uploadDate).toLocaleDateString()}
             </p>
+            <select
+              className="detail-status-select"
+              value={book.readingStatus}
+              onChange={(e) => handleSave({ readingStatus: e.target.value as ReadingStatus })}
+            >
+              {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
 
             <div className="detail-tags">
               {book.tags.map((tag) => (
@@ -157,6 +199,36 @@ export default function BookDetail({ book, onClose, onDelete, onUpdate }: Props)
               />
             </div>
 
+            {collections.length > 0 && (
+              <div className="detail-collections">
+                {(book.collections || []).map((colId) => {
+                  const col = collections.find((c) => c.id === colId);
+                  if (!col) return null;
+                  return (
+                    <span key={colId} className="collection-chip">
+                      {col.name}
+                      <button className="tag-remove" onClick={() => handleRemoveFromCollection(colId)}>&times;</button>
+                    </span>
+                  );
+                })}
+                {collections.filter((c) => !(book.collections || []).includes(c.id)).length > 0 && (
+                  <select
+                    className="collection-select"
+                    value=""
+                    onChange={(e) => { if (e.target.value) handleAddToCollection(e.target.value); }}
+                  >
+                    <option value="">Add to collection...</option>
+                    {collections
+                      .filter((c) => !(book.collections || []).includes(c.id))
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))
+                    }
+                  </select>
+                )}
+              </div>
+            )}
+
             {book.summary && (
               <div className="detail-section">
                 <h3>Summary</h3>
@@ -165,6 +237,49 @@ export default function BookDetail({ book, onClose, onDelete, onUpdate }: Props)
                 </div>
               </div>
             )}
+
+            <div className="detail-section">
+              <h3>
+                Notes
+                {!editingNotes && book.notes && (
+                  <button className="detail-notes-edit-btn" onClick={() => setEditingNotes(true)}>Edit</button>
+                )}
+              </h3>
+              {editingNotes ? (
+                <>
+                  <textarea
+                    className="detail-notes-textarea"
+                    value={notesDraft}
+                    onChange={(e) => setNotesDraft(e.target.value)}
+                    placeholder="Write your notes in markdown..."
+                    autoFocus
+                  />
+                  <div className="detail-notes-actions">
+                    <button
+                      className="btn-primary"
+                      onClick={() => { handleSave({ notes: notesDraft }); setEditingNotes(false); }}
+                    >
+                      Save
+                    </button>
+                    <button
+                      className="detail-confirm button"
+                      onClick={() => { setNotesDraft(book.notes); setEditingNotes(false); }}
+                      style={{ padding: '0.4rem 1rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', color: 'var(--text)', cursor: 'pointer', fontSize: '0.8rem' }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              ) : book.notes ? (
+                <div className="detail-summary">
+                  <Markdown>{book.notes}</Markdown>
+                </div>
+              ) : (
+                <p className="detail-notes-empty" onClick={() => setEditingNotes(true)}>
+                  Add notes...
+                </p>
+              )}
+            </div>
 
             {book.toc.length > 0 && (
               <div className="detail-section">

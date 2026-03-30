@@ -43,6 +43,9 @@ function makeBook(overrides?: Partial<Book>): Book {
     toc: overrides?.toc ?? [{ title: 'Chapter 1' }],
     originalFilename: overrides?.originalFilename ?? 'test.pdf',
     tags: overrides?.tags ?? [],
+    readingStatus: overrides?.readingStatus ?? 'unread',
+    notes: overrides?.notes ?? '',
+    collections: overrides?.collections ?? [],
   };
 }
 

@@ -11,6 +11,7 @@ import { initIndex } from './lib/vectra-store.js';
 import { embed } from './lib/embeddings.js';
 import { bookRoutes } from './routes/books.js';
 import { searchRoutes } from './routes/search.js';
+import { collectionRoutes } from './routes/collections.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -52,6 +53,7 @@ await server.register(fastifyStatic, {
 
 await server.register(bookRoutes, { prefix: '/api' });
 await server.register(searchRoutes, { prefix: '/api' });
+await server.register(collectionRoutes, { prefix: '/api' });
 
 // Initialize Vectra index
 await initIndex();
