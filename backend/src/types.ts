@@ -1,3 +1,4 @@
+// Mirrored as ReadingStatusSchema in schemas.ts for runtime validation
 export type ReadingStatus = 'unread' | 'want_to_read' | 'reading' | 'finished';
 
 export interface Book {

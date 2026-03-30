@@ -7,8 +7,12 @@ import { addBook, getBook, getAllBooks, removeBook, updateBook, getAllTags, getF
 import { processPdf } from '../lib/pdf-processor.js';
 import { deleteBookChunks } from '../lib/vectra-store.js';
 import type { Book, ReadingStatus } from '../types.js';
-
-const VALID_STATUSES: ReadingStatus[] = ['unread', 'want_to_read', 'reading', 'finished'];
+import {
+  parseRequest,
+  IdParamSchema,
+  GetBooksQuerySchema,
+  UpdateBookBodySchema,
+} from '../schemas.js';
 
 export const bookRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post('/books', async (request, reply) => {
@@ -71,20 +75,14 @@ export const bookRoutes: FastifyPluginAsync = async (fastify) => {
     }
   });
 
-  fastify.get('/books', async (request) => {
-    const { sortBy, order, authors, tags, statuses, collections } = request.query as {
-      sortBy?: string; order?: string;
-      authors?: string; tags?: string; statuses?: string; collections?: string;
-    };
+  fastify.get('/books', async (request, reply) => {
+    const query = parseRequest(GetBooksQuerySchema, request.query, reply);
+    if (!query) return;
 
-    const validFields = ['title', 'author', 'uploadDate'] as const;
-    const validOrders = ['asc', 'desc'] as const;
+    const { sortBy, order, authors, tags, statuses, collections } = query;
 
-    const sort = sortBy && validFields.includes(sortBy as any)
-      ? {
-          field: sortBy as 'title' | 'author' | 'uploadDate',
-          order: (validOrders.includes(order as any) ? order : 'asc') as 'asc' | 'desc',
-        }
+    const sort = sortBy
+      ? { field: sortBy, order: (order ?? 'asc') as 'asc' | 'desc' }
       : undefined;
 
     const hasFilters = authors || tags || statuses || collections;
@@ -106,8 +104,9 @@ export const bookRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   fastify.get('/books/:id', async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const book = getBook(id);
+    const params = parseRequest(IdParamSchema, request.params, reply);
+    if (!params) return;
+    const book = getBook(params.id);
     if (!book) {
       return reply.code(404).send({ error: 'Book not found' });
     }
@@ -115,33 +114,19 @@ export const bookRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   fastify.patch('/books/:id', async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const body = request.body as { title?: string; author?: string; tags?: string[]; readingStatus?: string; notes?: string };
-
-    if (body.title !== undefined && (typeof body.title !== 'string' || !body.title.trim())) {
-      return reply.code(400).send({ error: 'Title must be a non-empty string' });
-    }
-    if (body.author !== undefined && (typeof body.author !== 'string' || !body.author.trim())) {
-      return reply.code(400).send({ error: 'Author must be a non-empty string' });
-    }
-    if (body.tags !== undefined && (!Array.isArray(body.tags) || !body.tags.every((t) => typeof t === 'string'))) {
-      return reply.code(400).send({ error: 'Tags must be an array of strings' });
-    }
-    if (body.readingStatus !== undefined && !VALID_STATUSES.includes(body.readingStatus as ReadingStatus)) {
-      return reply.code(400).send({ error: `Reading status must be one of: ${VALID_STATUSES.join(', ')}` });
-    }
-    if (body.notes !== undefined && typeof body.notes !== 'string') {
-      return reply.code(400).send({ error: 'Notes must be a string' });
-    }
+    const params = parseRequest(IdParamSchema, request.params, reply);
+    if (!params) return;
+    const body = parseRequest(UpdateBookBodySchema, request.body, reply);
+    if (!body) return;
 
     const updates: { title?: string; author?: string; tags?: string[]; readingStatus?: ReadingStatus; notes?: string } = {};
-    if (body.title !== undefined) updates.title = body.title.trim();
-    if (body.author !== undefined) updates.author = body.author.trim();
+    if (body.title !== undefined) updates.title = body.title;
+    if (body.author !== undefined) updates.author = body.author;
     if (body.tags !== undefined) updates.tags = [...new Set(body.tags.map((t) => t.trim()).filter(Boolean))];
-    if (body.readingStatus !== undefined) updates.readingStatus = body.readingStatus as ReadingStatus;
+    if (body.readingStatus !== undefined) updates.readingStatus = body.readingStatus;
     if (body.notes !== undefined) updates.notes = body.notes;
 
-    const book = updateBook(id, updates);
+    const book = updateBook(params.id, updates);
     if (!book) {
       return reply.code(404).send({ error: 'Book not found' });
     }
@@ -153,8 +138,9 @@ export const bookRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   fastify.delete('/books/:id', async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const book = removeBook(id);
+    const params = parseRequest(IdParamSchema, request.params, reply);
+    if (!params) return;
+    const book = removeBook(params.id);
     if (!book) {
       return reply.code(404).send({ error: 'Book not found' });
     }
@@ -165,7 +151,7 @@ export const bookRoutes: FastifyPluginAsync = async (fastify) => {
     await Promise.allSettled([
       unlink(pdfPath),
       unlink(coverPath),
-      deleteBookChunks(id),
+      deleteBookChunks(params.id),
     ]);
 
     return { success: true };

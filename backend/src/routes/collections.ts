@@ -8,17 +8,22 @@ import {
   addBookToCollection,
   removeBookFromCollection,
 } from '../lib/storage.js';
+import {
+  parseRequest,
+  IdParamSchema,
+  CreateCollectionBodySchema,
+  UpdateCollectionBodySchema,
+  AddBookToCollectionBodySchema,
+  CollectionBookParamsSchema,
+} from '../schemas.js';
 
 export const collectionRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post('/collections', async (request, reply) => {
-    const body = request.body as { name?: string; description?: string };
-
-    if (!body.name || typeof body.name !== 'string' || !body.name.trim()) {
-      return reply.code(400).send({ error: 'Name must be a non-empty string' });
-    }
+    const body = parseRequest(CreateCollectionBodySchema, request.body, reply);
+    if (!body) return;
 
     try {
-      const collection = createCollection(body.name.trim(), body.description?.trim());
+      const collection = createCollection(body.name, body.description?.trim());
       return reply.code(201).send(collection);
     } catch (err: any) {
       if (err.message?.includes('UNIQUE constraint')) {
@@ -33,19 +38,17 @@ export const collectionRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   fastify.patch('/collections/:id', async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const body = request.body as { name?: string; description?: string };
-
-    if (body.name !== undefined && (typeof body.name !== 'string' || !body.name.trim())) {
-      return reply.code(400).send({ error: 'Name must be a non-empty string' });
-    }
+    const params = parseRequest(IdParamSchema, request.params, reply);
+    if (!params) return;
+    const body = parseRequest(UpdateCollectionBodySchema, request.body, reply);
+    if (!body) return;
 
     const updates: { name?: string; description?: string } = {};
-    if (body.name !== undefined) updates.name = body.name.trim();
+    if (body.name !== undefined) updates.name = body.name;
     if (body.description !== undefined) updates.description = body.description.trim();
 
     try {
-      const collection = updateCollection(id, updates);
+      const collection = updateCollection(params.id, updates);
       if (!collection) {
         return reply.code(404).send({ error: 'Collection not found' });
       }
@@ -59,8 +62,9 @@ export const collectionRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   fastify.delete('/collections/:id', async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const deleted = deleteCollection(id);
+    const params = parseRequest(IdParamSchema, request.params, reply);
+    if (!params) return;
+    const deleted = deleteCollection(params.id);
     if (!deleted) {
       return reply.code(404).send({ error: 'Collection not found' });
     }
@@ -68,31 +72,30 @@ export const collectionRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   fastify.post('/collections/:id/books', async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const body = request.body as { bookId?: string };
+    const params = parseRequest(IdParamSchema, request.params, reply);
+    if (!params) return;
+    const body = parseRequest(AddBookToCollectionBodySchema, request.body, reply);
+    if (!body) return;
 
-    if (!body.bookId || typeof body.bookId !== 'string') {
-      return reply.code(400).send({ error: 'bookId is required' });
-    }
-
-    const collection = getCollection(id);
+    const collection = getCollection(params.id);
     if (!collection) {
       return reply.code(404).send({ error: 'Collection not found' });
     }
 
-    addBookToCollection(body.bookId, id);
+    addBookToCollection(body.bookId, params.id);
     return { success: true };
   });
 
   fastify.delete('/collections/:id/books/:bookId', async (request, reply) => {
-    const { id, bookId } = request.params as { id: string; bookId: string };
+    const params = parseRequest(CollectionBookParamsSchema, request.params, reply);
+    if (!params) return;
 
-    const collection = getCollection(id);
+    const collection = getCollection(params.id);
     if (!collection) {
       return reply.code(404).send({ error: 'Collection not found' });
     }
 
-    removeBookFromCollection(bookId, id);
+    removeBookFromCollection(params.bookId, params.id);
     return { success: true };
   });
 };
