@@ -20,8 +20,11 @@ async function isIndexValid(): Promise<boolean> {
 
 export async function initIndex(): Promise<void> {
   if (!(await index.isIndexCreated()) || !(await isIndexValid())) {
+    console.log('Vectra index missing or invalid, creating fresh index...');
     await index.createIndex({ version: 1, deleteIfExists: true });
   }
+  const stats = await index.getIndexStats();
+  console.log(`Vectra index ready: ${stats.items} items`);
 }
 
 export async function addChunks(

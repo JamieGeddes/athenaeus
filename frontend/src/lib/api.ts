@@ -4,6 +4,10 @@ async function fetchWithRetry(url: string, init?: RequestInit, retries = 3): Pro
   for (let i = 0; i <= retries; i++) {
     try {
       const res = await fetch(url, init);
+      if (res.status === 503 && i < retries) {
+        await new Promise((r) => setTimeout(r, 1000 * (i + 1)));
+        continue;
+      }
       return res;
     } catch (err) {
       if (i === retries) throw err;

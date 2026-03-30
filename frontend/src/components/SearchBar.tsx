@@ -12,6 +12,7 @@ export default function SearchBar({ onSelectBook }: Props) {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -28,10 +29,14 @@ export default function SearchBar({ onSelectBook }: Props) {
       setLoading(true);
       try {
         const res = await searchBooks(query.trim());
+        setError(null);
         setResults(res);
         setOpen(res.length > 0);
-      } catch {
+      } catch (err) {
+        console.error('Search failed:', err);
         setResults([]);
+        setError('Search is temporarily unavailable');
+        setOpen(true);
       } finally {
         setLoading(false);
       }
@@ -64,21 +69,25 @@ export default function SearchBar({ onSelectBook }: Props) {
       {loading && <span className="search-spinner" />}
       {open && (
         <div className="search-results">
-          {results.map((r, i) => (
-            <button
-              key={i}
-              className="search-result"
-              onClick={() => {
-                onSelectBook(r.bookId);
-                setOpen(false);
-                setQuery('');
-              }}
-            >
-              <span className="search-result-book">{r.bookTitle}</span>
-              <span className="search-result-text">{r.chunkText.slice(0, 150)}...</span>
-              <span className="search-result-score">{Math.round(r.score * 100)}%</span>
-            </button>
-          ))}
+          {error ? (
+            <div className="search-error">{error}</div>
+          ) : (
+            results.map((r, i) => (
+              <button
+                key={i}
+                className="search-result"
+                onClick={() => {
+                  onSelectBook(r.bookId);
+                  setOpen(false);
+                  setQuery('');
+                }}
+              >
+                <span className="search-result-book">{r.bookTitle}</span>
+                <span className="search-result-text">{r.chunkText.slice(0, 150)}...</span>
+                <span className="search-result-score">{Math.round(r.score * 100)}%</span>
+              </button>
+            ))
+          )}
         </div>
       )}
     </div>

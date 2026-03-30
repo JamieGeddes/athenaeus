@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { DATA_DIR, PDFS_DIR, COVERS_DIR, VECTRA_DIR } from './lib/config.js';
 import { getDb } from './lib/db.js';
 import { initIndex } from './lib/vectra-store.js';
+import { embed } from './lib/embeddings.js';
 import { bookRoutes } from './routes/books.js';
 import { searchRoutes } from './routes/search.js';
 
@@ -54,6 +55,14 @@ await server.register(searchRoutes, { prefix: '/api' });
 
 // Initialize Vectra index
 await initIndex();
+
+// Warm up embedding model so failures surface at startup, not on first search
+try {
+  await embed('warmup');
+  console.log('Embedding model loaded successfully');
+} catch (err) {
+  console.error('Failed to load embedding model:', err);
+}
 
 // Production: serve frontend build
 if (process.env.NODE_ENV === 'production') {
