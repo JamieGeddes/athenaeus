@@ -1,8 +1,8 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { LocalIndex } from 'vectra';
-import { VECTRA_DIR } from './config.js';
-import { embed } from './embeddings.js';
+import { VECTRA_DIR, EMBEDDING_BATCH_SIZE } from './config.js';
+import { embed, embedBatch } from './embeddings.js';
 import type { SearchResult } from '../types.js';
 
 const index = new LocalIndex(VECTRA_DIR);
@@ -33,19 +33,42 @@ export async function addChunks(
   chunks: { text: string; index: number; pageNumber: number }[],
   onChunkProgress?: (completed: number, total: number) => void,
 ): Promise<void> {
-  for (const chunk of chunks) {
-    const vector = await embed(chunk.text);
-    await index.insertItem({
-      vector,
-      metadata: {
-        bookId,
-        bookTitle,
-        chunkIndex: chunk.index,
-        text: chunk.text,
-        pageNumber: chunk.pageNumber,
-      },
-    });
-    onChunkProgress?.(chunk.index + 1, chunks.length);
+  if (chunks.length === 0) return;
+
+  // Wrap all inserts in a single Vectra transaction so insertItem skips disk
+  // I/O per item (see LocalIndex.ts:194-195). Without this, each insert
+  // serializes the entire index.json file to disk.
+  await index.beginUpdate();
+
+  try {
+    for (let batchStart = 0; batchStart < chunks.length; batchStart += EMBEDDING_BATCH_SIZE) {
+      const batch = chunks.slice(batchStart, batchStart + EMBEDDING_BATCH_SIZE);
+      const texts = batch.map((c) => c.text);
+
+      // Single batched forward pass through the transformer model.
+      const vectors = await embedBatch(texts);
+
+      for (let i = 0; i < batch.length; i++) {
+        await index.insertItem({
+          vector: vectors[i],
+          metadata: {
+            bookId,
+            bookTitle,
+            chunkIndex: batch[i].index,
+            text: batch[i].text,
+            pageNumber: batch[i].pageNumber,
+          },
+        });
+      }
+
+      const completed = Math.min(batchStart + batch.length, chunks.length);
+      onChunkProgress?.(completed, chunks.length);
+    }
+
+    await index.endUpdate();
+  } catch (err) {
+    index.cancelUpdate();
+    throw err;
   }
 }
 

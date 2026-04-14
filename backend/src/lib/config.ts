@@ -13,3 +13,5 @@ export const CHUNK_SIZE = 500;
 export const CHUNK_OVERLAP = 50;
 export const COVER_WIDTH = 400;
 export const SUMMARY_MAX_CHUNKS = 10;
+export const EMBEDDING_BATCH_SIZE = 32;
+export const TEXT_EXTRACTION_CONCURRENCY = 5;
