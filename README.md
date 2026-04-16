@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./Athenaeus.png" alt="Athenaeus" width="600" />
+</p>
+
 # Athenaeus
 
 A digital library for managing ebooks with AI-powered summaries and semantic search. Upload PDFs, automatically extract metadata and covers, generate summaries via Gemini, and search across your collection using natural language.
